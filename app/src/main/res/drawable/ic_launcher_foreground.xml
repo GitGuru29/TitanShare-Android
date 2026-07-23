@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TitanShare launcher foreground: a stylized "T" on transparent bg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer circle glow -->
+    <path
+        android:fillColor="#1A0A84FF"
+        android:pathData="M54,14 A40,40 0 1,1 53.99,14 Z"/>
+
+    <!-- Inner circle -->
+    <path
+        android:fillColor="#220A84FF"
+        android:pathData="M54,22 A32,32 0 1,1 53.99,22 Z"/>
+
+    <!-- T horizontal bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,40 L78,40 L78,48 L30,48 Z"/>
+
+    <!-- T vertical bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M49,40 L59,40 L59,76 L49,76 Z"/>
+
+    <!-- Blue accent dot -->
+    <path
+        android:fillColor="#0A84FF"
+        android:pathData="M54,72 A5,5 0 1,1 53.99,72 Z"/>
+</vector>
