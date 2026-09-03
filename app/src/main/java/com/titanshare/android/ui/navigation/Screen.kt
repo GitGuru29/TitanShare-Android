@@ -8,4 +8,5 @@ sealed class Screen(val route: String) {
     object Keyboard     : Screen("keyboard")
     object FileTransfer : Screen("file_transfer")
     object LinuxFiles   : Screen("linux_files")
+    object Mirror       : Screen("mirror")
 }

@@ -123,6 +123,50 @@ fun DashboardScreen(
                     }
                 }
 
+                // ── Screen Mirror feature card ─────────────────────────
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable { onNavigate(Screen.Mirror.route) },
+                    innerPadding = 0.dp,
+                    cornerRadius = 24.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(listOf(ElectricBlue.copy(alpha = 0.35f), PurpleAccent.copy(alpha = 0.35f)))
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.ScreenShare, null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Screen Mirror",
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "Stream your screen to the PC in real time",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                        Icon(Icons.Default.ChevronRight, null, tint = TextSecondary, modifier = Modifier.size(22.dp))
+                    }
+                }
+
                 // ── System Stats ──────────────────────────────────────
                 if (sysInfo == null) {
                     GlassCard(modifier = Modifier.fillMaxWidth().height(200.dp), cornerRadius = 32.dp) {

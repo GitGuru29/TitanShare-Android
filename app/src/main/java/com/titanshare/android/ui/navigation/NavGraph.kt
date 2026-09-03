@@ -8,9 +8,10 @@ import com.titanshare.android.ui.screens.DashboardScreen
 import com.titanshare.android.ui.screens.DiscoveryScreen
 import com.titanshare.android.ui.screens.FileTransferScreen
 import com.titanshare.android.ui.screens.KeyboardScreen
+import com.titanshare.android.ui.screens.LinuxFilesScreen
+import com.titanshare.android.ui.screens.MirrorScreen
 import com.titanshare.android.ui.screens.PairingScreen
 import com.titanshare.android.ui.screens.TrackpadScreen
-import com.titanshare.android.ui.screens.LinuxFilesScreen
 import com.titanshare.android.viewmodel.AppViewModel
 
 @Composable
@@ -61,6 +62,10 @@ fun TitanNavGraph(navController: NavHostController, vm: AppViewModel) {
 
         composable(Screen.LinuxFiles.route) {
             LinuxFilesScreen(vm = vm, onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Mirror.route) {
+            MirrorScreen(vm = vm, onBack = { navController.popBackStack() })
         }
     }
 }

@@ -1,12 +1,14 @@
 package com.titanshare.android.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.titanshare.android.data.model.Device
 import com.titanshare.android.data.model.SystemInfo
 import com.titanshare.android.data.network.DaemonClient
 import com.titanshare.android.data.network.DiscoveryManager
+import com.titanshare.android.services.MirrorService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,9 +86,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _mirrorError = MutableStateFlow<String?>(null)
     val mirrorError: StateFlow<String?> = _mirrorError.asStateFlow()
 
-    /** UDP port returned by the daemon after START_PHONE_MIRROR. Passed to the service. */
-    var mirrorUdpPort: Int = 5001
+    // Live mirror telemetry surfaced by MirrorService.
+    data class MirrorStats(
+        val fps: Int = 0,
+        val quality: Int = 70,
+        val framesSent: Long = 0,
+        val framesDropped: Long = 0,
+        val width: Int = 0,
+        val height: Int = 0,
+    )
+
+    private val _mirrorStats = MutableStateFlow(MirrorStats())
+    val mirrorStats: StateFlow<MirrorStats> = _mirrorStats.asStateFlow()
+
+    /** TCP port returned by the daemon after START_MIRROR. Passed to the service. */
+    var mirrorPort: Int = 5001
         private set
+
+    /** MediaProjection result code, captured from the permission activity. */
+    var mirrorPermissionResultCode: Int = 0
+        private set
+
+    /** Stores the MediaProjection result code from the permission launcher. */
+    fun setMirrorPermissionResultCode(code: Int) {
+        mirrorPermissionResultCode = code
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -132,6 +156,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun disconnect() {
         stopStatsPolling()
+        if (_mirrorActive.value) {
+            MirrorService.stop(getApplication())
+        }
         client.disconnect()
         wakeLock?.let { if (it.isHeld) it.release() }
         wifiLock?.let { if (it.isHeld) it.release() }
@@ -139,6 +166,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         wifiLock = null
         _selectedDevice.value = null
         _systemInfo.value     = null
+        _mirrorStats.value    = MirrorStats()
     }
 
     // ─── Stats polling ────────────────────────────────────────────────────────
@@ -217,33 +245,71 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Screen Mirror commands ───────────────────────────────────────────────
 
-    fun onMirrorServiceStarted() {
-        _mirrorActive.value = true
-        _mirrorError.value  = null
+    private val mirrorServiceListener = object : MirrorService.Listener {
+        override fun onMirrorStarted(fps: Int, width: Int, height: Int, quality: Int) {
+            _mirrorActive.value = true
+            _mirrorError.value  = null
+            _mirrorStats.value  = _mirrorStats.value.copy(
+                fps = fps, width = width, height = height, quality = quality
+            )
+        }
+
+        override fun onMirrorStats(framesSent: Long, framesDropped: Long, fps: Int, quality: Int) {
+            _mirrorStats.value = _mirrorStats.value.copy(
+                framesSent = framesSent, framesDropped = framesDropped,
+                fps = fps, quality = quality
+            )
+        }
+
+        override fun onMirrorStopped(error: String?) {
+            _mirrorActive.value = false
+            _mirrorError.value  = error
+            _mirrorStats.value  = MirrorStats()
+        }
     }
 
-    fun onMirrorServiceStopped(error: String?) {
-        _mirrorActive.value = false
-        _mirrorError.value  = error
+    /** Registers the ViewModel as the mirror stats listener. Call on app start. */
+    fun initMirrorListener() {
+        MirrorService.activeListener = mirrorServiceListener
     }
 
-    fun clearMirrorError() { _mirrorError.value = null }
+    /**
+     * Called after the user grants the MediaProjection permission.
+     */
+    fun startMirror(resultData: Intent?) {
+        val host = client.lastHost ?: run {
+            _mirrorError.value = "Not connected to a daemon"
+            return
+        }
+        MirrorService.start(
+            context = getApplication<Application>(),
+            resultCode = mirrorPermissionResultCode,
+            resultData = resultData,
+            host = host,
+            port = mirrorPort,
+        )
+    }
 
+    /** Resolves the daemon's mirror port, then stores it for [startMirror]. */
     fun prepareAndStartMirror(onReady: () -> Unit) {
+        MirrorService.activeListener = mirrorServiceListener
         viewModelScope.launch {
             val port = client.startPhoneMirror()
             if (port < 0) {
                 _mirrorError.value = "Daemon rejected mirror start — reconnect and try again"
                 return@launch
             }
-            mirrorUdpPort = port
+            mirrorPort = port
             onReady()
         }
     }
 
     fun stopMirror() {
+        MirrorService.stop(getApplication())
         viewModelScope.launch { client.stopPhoneMirror() }
     }
+
+    fun clearMirrorError() { _mirrorError.value = null }
 
     // ─── File Transfer ────────────────────────────────────────────────────────
 
@@ -342,6 +408,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
+        MirrorService.activeListener = null
         stopDiscovery()
         client.disconnect()
     }

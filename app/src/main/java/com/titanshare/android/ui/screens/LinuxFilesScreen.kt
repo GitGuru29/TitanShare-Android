@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.titanshare.android.ui.components.AirDropOverlay
 import com.titanshare.android.ui.components.GlassCard
 import com.titanshare.android.ui.theme.*
+import com.titanshare.android.data.network.DaemonClient
 import com.titanshare.android.viewmodel.AppViewModel
 
 @Composable
