@@ -227,7 +227,7 @@ class DaemonClient {
         if (!isConnected) return@withContext -1
         socketMutex.withLock {
             try {
-                writer?.println("CMD:START_PHONE_MIRROR")
+                writer?.println("CMD:START_MIRROR")
                 val raw = readLineUnbuffered() ?: return@withLock -1
                 Log.i(TAG, "startPhoneMirror response: $raw")
                 // Daemon replies with JSON {"type":"MIRROR_READY","port":5001,...}
@@ -244,7 +244,7 @@ class DaemonClient {
         }
     }
 
-    suspend fun stopPhoneMirror() = sendCommand("STOP_PHONE_MIRROR")
+    suspend fun stopPhoneMirror() = sendCommand("STOP_MIRROR")
 
     // ─── File Transfer ────────────────────────────────────────────────────────
 
