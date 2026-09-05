@@ -19,6 +19,16 @@ import kotlinx.coroutines.launch
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
+    // ─── Preferences & First Launch ───────────────────────────────────────────
+    private val prefs = application.getSharedPreferences("titanshare_prefs", android.content.Context.MODE_PRIVATE)
+
+    val isWelcomeCompleted: Boolean
+        get() = prefs.getBoolean("welcome_completed", false)
+
+    fun completeWelcome() {
+        prefs.edit().putBoolean("welcome_completed", true).apply()
+    }
+
     // ─── Discovery ────────────────────────────────────────────────────────────
     val discoveryManager = DiscoveryManager(application)
     val discoveredDevices: StateFlow<List<Device>> = discoveryManager.devices
