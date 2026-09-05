@@ -1,7 +1,6 @@
 package com.titanshare.android.ui.screens
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,18 +22,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.titanshare.android.data.model.SystemInfo
-import com.titanshare.android.ui.components.GlassCard
 import com.titanshare.android.ui.navigation.Screen
-import com.titanshare.android.ui.theme.*
 import com.titanshare.android.viewmodel.AppViewModel
 import kotlinx.coroutines.delay
 
@@ -46,7 +43,6 @@ fun DashboardScreen(
     val sysInfo  by vm.systemInfo.collectAsStateWithLifecycle()
     val toast    by vm.toastMessage.collectAsStateWithLifecycle()
     var showDisconnectDialog by remember { mutableStateOf(false) }
-    var showPowerDialog      by remember { mutableStateOf(false) }
 
     LaunchedEffect(toast) {
         if (toast != null) delay(1500)
@@ -56,621 +52,651 @@ fun DashboardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(NavyDeep, Color(0xFF030810))))
-    )  {
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // ── Top Bar ───────────────────────────────────────────────
+            .background(Color(0xFF040814))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            // ── Top Header Bar ─────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 16.dp, top = 52.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        device?.name ?: "Linux PC",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AnimatedConnectedDot()
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "Connected • ${device?.host}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+                Text(
+                    text = "TitanShare",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
                 IconButton(
                     onClick = { showDisconnectDialog = true },
-                    modifier = Modifier.clip(CircleShape).background(GlassWhite)
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x1AFFFFFF))
                 ) {
-                    Icon(Icons.Default.LinkOff, "Disconnect", tint = TextPrimary, modifier = Modifier.size(20.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
-            // ── Scrollable content ────────────────────────────────────
+            // ── Scrollable Content Area ─────────────────────────────────
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Spacer(Modifier.height(8.dp))
+                // 1. Connected Laptop Header Card
+                ConnectedDeviceHeaderCard(
+                    deviceName = device?.name ?: "msfvenom",
+                    ipAddress = device?.host ?: "10.72.76.6",
+                    model = sysInfo?.let { "${it.brand} ${it.model}".trim() }?.takeIf { it.isNotBlank() } ?: "LENOVO 82KB",
+                    kernel = sysInfo?.osVersion?.takeIf { it.isNotBlank() } ?: "Linux 6.18.47-1-lts",
+                    onCardClick = { showDisconnectDialog = true }
+                )
 
-                // ── Bento Row 1: Quick Actions ────────────────────────
+                // 2. Bento Quick Action Grid (4 Buttons)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    BentoAction(Icons.Default.Mouse, "Trackpad", ElectricBlue, Modifier.weight(1f).aspectRatio(1f)) {
-                        onNavigate(Screen.Trackpad.route)
-                    }
-                    BentoAction(Icons.Default.Keyboard, "Keyboard", PurpleAccent, Modifier.weight(1f).aspectRatio(1f)) {
-                        onNavigate(Screen.Keyboard.route)
-                    }
-                    BentoAction(Icons.Default.UploadFile, "Send", SuccessGreen, Modifier.weight(1f).aspectRatio(1f)) {
-                        onNavigate(Screen.FileTransfer.route)
-                    }
-                    BentoAction(Icons.Default.Download, "Receive", ElectricBlue, Modifier.weight(1f).aspectRatio(1f)) {
-                        onNavigate(Screen.LinuxFiles.route)
-                    }
+                    BentoQuickAction(
+                        icon = Icons.Outlined.Mouse,
+                        label = "Trackpad",
+                        iconColor = Color(0xFF00A2FF),
+                        bgGlow = Color(0x220052FF),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate(Screen.Trackpad.route) }
+                    )
+                    BentoQuickAction(
+                        icon = Icons.Outlined.Keyboard,
+                        label = "Keyboard",
+                        iconColor = Color(0xFFA855F7),
+                        bgGlow = Color(0x22A855F7),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate(Screen.Keyboard.route) }
+                    )
+                    BentoQuickAction(
+                        icon = Icons.Outlined.ArrowUpward,
+                        label = "Send",
+                        iconColor = Color(0xFF00E676),
+                        bgGlow = Color(0x2200E676),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate(Screen.FileTransfer.route) }
+                    )
+                    BentoQuickAction(
+                        icon = Icons.Outlined.ArrowDownward,
+                        label = "Receive",
+                        iconColor = Color(0xFF00A2FF),
+                        bgGlow = Color(0x2200A2FF),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate(Screen.LinuxFiles.route) }
+                    )
                 }
 
-                // ── Screen Mirror feature card ─────────────────────────
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .clickable { onNavigate(Screen.Mirror.route) },
-                    innerPadding = 0.dp,
-                    cornerRadius = 24.dp
+                // 3. Screen Mirror Card
+                ScreenMirrorBannerCard(
+                    onClick = { onNavigate(Screen.Mirror.route) }
+                )
+
+                // 4. System Overview Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(listOf(ElectricBlue.copy(alpha = 0.35f), PurpleAccent.copy(alpha = 0.35f)))
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.ScreenShare, null, tint = Color.White, modifier = Modifier.size(24.dp))
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Screen Mirror",
-                                color = TextPrimary,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                "Stream your screen to the PC in real time",
-                                color = TextMuted,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
-                        Icon(Icons.Default.ChevronRight, null, tint = TextSecondary, modifier = Modifier.size(22.dp))
-                    }
+                    Text(
+                        text = "System Overview",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = Color(0xFF8E9EAF),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
-                // ── System Stats ──────────────────────────────────────
-                if (sysInfo == null) {
-                    GlassCard(modifier = Modifier.fillMaxWidth().height(200.dp), cornerRadius = 32.dp) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = ElectricBlue, modifier = Modifier.size(48.dp), strokeWidth = 4.dp)
-                        }
-                    }
-                } else {
-                    sysInfo?.let { info ->
-                        // Device Model Card
-                        GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 16.dp, cornerRadius = 24.dp) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier.size(40.dp).clip(CircleShape).background(ElectricBlue.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Computer, null, tint = ElectricBlue, modifier = Modifier.size(20.dp))
-                                }
-                                Spacer(Modifier.width(16.dp))
-                                Column {
-                                    Text("${info.brand} ${info.model}", color = TextPrimary, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Text(info.osVersion, color = TextMuted, style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                        }
+                // 5. 2x2 Metric Cards Grid
+                SystemMetricGrid(sysInfo = sysInfo)
 
-                        // ── CPU Task Manager Card ─────────────────────
-                        CpuTaskManagerCard(info = info)
-
-                        // Bento Row 3: RAM + Disk Gauges
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            BentoGaugeCard(
-                                label = "RAM", 
-                                progress = (info.ramUsage.toFloatOrNull() ?: 0f) / 100f, 
-                                valueText = "${info.ramUsage}%", 
-                                color = RamColor, 
-                                modifier = Modifier.weight(1f).aspectRatio(1f), 
-                                subText = "${info.ramUsed}/${info.ramTotal} GB"
-                            )
-                            BentoGaugeCard(
-                                label = "STORAGE", 
-                                progress = (info.storageUsage.toFloatOrNull() ?: 0f) / 100f, 
-                                valueText = "${info.storageUsage}%", 
-                                color = StorageColor, 
-                                modifier = Modifier.weight(1f).aspectRatio(1f), 
-                                subText = "${info.storageUsed}/${info.storageTotal} GB"
-                            )
-                        }
-
-                        // Battery
-                        if (info.battery > 0) {
-                            GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 18.dp, cornerRadius = 24.dp) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val battColor = if (info.battery > 40) SuccessGreen else DangerRed
-                                    Icon(
-                                        when {
-                                            info.battery > 80 -> Icons.Default.BatteryFull
-                                            info.battery > 40 -> Icons.Default.Battery4Bar
-                                            else -> Icons.Default.BatteryAlert
-                                        },
-                                        null,
-                                        tint = battColor,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text("Battery", color = TextPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                                            Text("${info.battery}%", color = TextPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                                        }
-                                        Spacer(Modifier.height(8.dp))
-                                        LinearProgressIndicator(
-                                            progress = { info.battery / 100f },
-                                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                                            color = battColor,
-                                            trackColor = GlassWhite,
-                                            strokeCap = StrokeCap.Round
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── Volume Control ────────────────────────────────────
-                GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 6.dp, cornerRadius = 100.dp) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { vm.volumeDown() }, modifier = Modifier.padding(start = 4.dp).size(48.dp)) {
-                            Icon(Icons.Default.VolumeDown, "Vol-", tint = TextPrimary, modifier = Modifier.size(26.dp))
-                        }
-                        
-                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            Text("VOLUME", color = TextSecondary, style = MaterialTheme.typography.labelMedium, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        IconButton(onClick = { vm.volumeUp() }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.VolumeUp, "Vol+", tint = TextPrimary, modifier = Modifier.size(26.dp))
-                        }
-                        
-                        Box(modifier = Modifier.padding(horizontal = 8.dp).width(1.dp).height(24.dp).background(GlassBorder))
-                        
-                        IconButton(onClick = { vm.mute() }, modifier = Modifier.padding(end = 4.dp).size(48.dp)) {
-                            Icon(Icons.Default.VolumeOff, "Mute", tint = WarningAmber, modifier = Modifier.size(22.dp))
-                        }
-                    }
-                }
-
-                // ── Power Actions ─────────────────────────────────────
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PowerButton(Icons.Default.Lock, "Lock", Modifier.weight(1f)) { vm.lock() }
-                    PowerButton(Icons.Default.Bedtime, "Sleep", Modifier.weight(1f)) { vm.sleep() }
-                    PowerButton(Icons.Default.PowerSettingsNew, "Power", Modifier.weight(1f), DangerRed) { showPowerDialog = true }
-                }
-
-                Spacer(Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(72.dp)) // Clearance for bottom nav bar
             }
         }
 
-        // ── Toast snack ───────────────────────────────────────────────
-        if (toast != null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 32.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(NavyCardLight.copy(alpha = 0.95f))
-                        .border(1.dp, GlassBorder, RoundedCornerShape(24.dp))
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                ) {
-                    Text(toast ?: "", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+        // ── Docked Bottom Navigation Bar ──────────────────────────────
+        DashboardBottomNavBar(
+            activeTab = "Home",
+            onTabSelected = { tab ->
+                when (tab) {
+                    "Files"  -> onNavigate(Screen.LinuxFiles.route)
+                    "Mirror" -> onNavigate(Screen.Mirror.route)
+                    "System" -> { showDisconnectDialog = true }
                 }
-            }
+            },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
+        // ── Disconnect Dialog ──────────────────────────────────────────
+        if (showDisconnectDialog) {
+            AlertDialog(
+                onDismissRequest = { showDisconnectDialog = false },
+                title = { Text("Disconnect Device?") },
+                text  = { Text("Are you sure you want to disconnect from ${device?.name ?: "Linux PC"}?") },
+                confirmButton = {
+                    TextButton(onClick = { vm.disconnect(); onDisconnect() }) {
+                        Text("Disconnect", color = Color(0xFFFF4D4D))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDisconnectDialog = false }) { Text("Cancel") }
+                },
+                containerColor = Color(0xFF0D1C33)
+            )
         }
-    }
-
-    // ── Dialogs ───────────────────────────────────────────────────────
-    if (showDisconnectDialog) {
-        AlertDialog(
-            onDismissRequest = { showDisconnectDialog = false },
-            title = { Text("Disconnect?") },
-            text  = { Text("You'll be taken back to device discovery.") },
-            confirmButton = {
-                TextButton(onClick = { vm.disconnect(); onDisconnect() }) {
-                    Text("Disconnect", color = DangerRed)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDisconnectDialog = false }) { Text("Cancel") }
-            },
-            containerColor = NavyCard,
-        )
-    }
-
-    if (showPowerDialog) {
-        AlertDialog(
-            onDismissRequest = { showPowerDialog = false },
-            title = { Text("Power Options") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PowerOption(Icons.Default.Bedtime,  "Sleep",    WarningAmber) { vm.sleep();    showPowerDialog = false }
-                    PowerOption(Icons.Default.Refresh,  "Reboot",   ElectricBlue) { vm.reboot();   showPowerDialog = false }
-                    PowerOption(Icons.Default.PowerSettingsNew, "Shutdown", DangerRed) { vm.shutdown(); showPowerDialog = false }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showPowerDialog = false }) { Text("Cancel") }
-            },
-            containerColor = NavyCard,
-        )
     }
 }
 
 @Composable
-private fun CpuTaskManagerCard(info: SystemInfo) {
-    // Rolling history — keep last 60 samples (3 min at 3s polling)
-    val history = remember { mutableStateListOf<Float>() }
-    val cpuNow = info.cpuLoad.toFloatOrNull() ?: 0f
-    LaunchedEffect(info.cpuLoad) {
-        history.add(cpuNow)
-        if (history.size > 60) history.removeAt(0)
-    }
+private fun ConnectedDeviceHeaderCard(
+    deviceName: String,
+    ipAddress: String,
+    model: String,
+    kernel: String,
+    onCardClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0x330B172E))
+            .border(1.dp, Color(0x331E385B), RoundedCornerShape(20.dp))
+            .clickable { onCardClick() }
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LaptopConnectedGraphic()
 
-    GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 20.dp, cornerRadius = 28.dp) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Spacer(modifier = Modifier.width(14.dp))
 
-            // Header row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        "CPU",
-                        color = TextMuted,
-                        style = MaterialTheme.typography.labelSmall,
+                        text = deviceName,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp
+                        color = Color.White
                     )
-                    Text(
-                        "${info.cpuLoad}%",
-                        color = CpuColor,
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    if (info.cpuFreqGhz != "0.00" && info.cpuFreqGhz.isNotEmpty()) {
-                        Text(
-                            "${info.cpuFreqGhz} GHz",
-                            color = TextPrimary,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    if (info.cpuCoreCount > 0) {
-                        Text(
-                            "${info.cpuCoreCount} logical cores",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                    Text(
-                        "${info.cpuTemp}°C",
-                        color = TempColor,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium
+                    Icon(
+                        imageVector = Icons.Default.Wifi,
+                        contentDescription = "Wifi",
+                        tint = Color(0xFF00E676),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00E676))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Connected",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF00E676)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = model,
+                        fontSize = 12.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = ipAddress,
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = kernel,
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LaptopConnectedGraphic(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .width(70.dp)
+            .height(54.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 2.dp, bottomEnd = 2.dp))
+                    .background(Color(0xFF0B1424))
+                    .border(1.dp, Color(0xFF1E385B), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 2.dp, bottomEnd = 2.dp))
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF020712),
+                                    Color(0xFF0052FF),
+                                    Color(0xFF00D4FF)
+                                ),
+                                start = Offset(0f, 0f),
+                                end = Offset(100f, 80f)
+                            )
+                        )
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .width(70.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+                    .background(Color(0xFF1E385B))
+            )
+        }
+    }
+}
+
+@Composable
+private fun BentoQuickAction(
+    icon: ImageVector,
+    label: String,
+    iconColor: Color,
+    bgGlow: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .aspectRatio(0.95f)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0x330B172E))
+            .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(bgGlow),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScreenMirrorBannerCard(
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0x330B172E))
+            .border(1.dp, Color(0x331E385B), RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF6366F1).copy(alpha = 0.4f),
+                                Color(0xFFA855F7).copy(alpha = 0.4f)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Monitor,
+                    contentDescription = "Screen Mirror",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
 
-            // Scrolling history graph — Task Manager style
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Screen Mirror",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Stream your screen to the PC\nin real time",
+                    fontSize = 12.sp,
+                    color = Color(0xFF94A3B8),
+                    lineHeight = 16.sp
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color(0xFF8E9EAF),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SystemMetricGrid(sysInfo: SystemInfo?) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Row 1: CPU & RAM
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            MetricCard(
+                icon = Icons.Outlined.Memory,
+                iconColor = Color(0xFF00A2FF),
+                title = "CPU",
+                value = "${sysInfo?.cpuLoad ?: "6.3"}%",
+                subtext = "${sysInfo?.cpuFreqGhz ?: "0.40"} GHz  ${sysInfo?.cpuTemp ?: "43"}°C",
+                progress = (sysInfo?.cpuLoad?.toFloatOrNull() ?: 6.3f) / 100f,
+                progressColor = Color(0xFF00E676),
+                modifier = Modifier.weight(1f)
+            )
+
+            MetricCard(
+                icon = Icons.Outlined.Memory,
+                iconColor = Color(0xFF00A2FF),
+                title = "RAM",
+                value = "${sysInfo?.ramUsage ?: "43.0"}%",
+                subtext = "${sysInfo?.ramUsed ?: "6"} / ${sysInfo?.ramTotal ?: "15"} GB",
+                progress = (sysInfo?.ramUsage?.toFloatOrNull() ?: 43.0f) / 100f,
+                progressColor = Color(0xFF00A2FF),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Row 2: Storage & Battery
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            MetricCard(
+                icon = Icons.Outlined.DirectionsBus,
+                iconColor = Color(0xFF00E676),
+                title = "Storage",
+                value = "${sysInfo?.storageUsage ?: "42.7"}%",
+                subtext = "${sysInfo?.storageUsed ?: "199"} / ${sysInfo?.storageTotal ?: "467"} GB",
+                progress = (sysInfo?.storageUsage?.toFloatOrNull() ?: 42.7f) / 100f,
+                progressColor = Color(0xFF00E676),
+                modifier = Modifier.weight(1f)
+            )
+
+            MetricCard(
+                icon = Icons.Outlined.BatteryStd,
+                iconColor = Color(0xFF00E676),
+                title = "Battery",
+                value = "${sysInfo?.battery ?: 99}%",
+                subtext = "Charging",
+                progress = (sysInfo?.battery ?: 99) / 100f,
+                progressColor = Color(0xFF00E676),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricCard(
+    icon: ImageVector,
+    iconColor: Color,
+    title: String,
+    value: String,
+    subtext: String,
+    progress: Float,
+    progressColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0x330B172E))
+            .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
+            .padding(14.dp)
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = iconColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    fontSize = 12.sp,
+                    color = Color(0xFF94A3B8),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = subtext,
+                fontSize = 11.sp,
+                color = Color(0xFF64748B)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF050D1A))
-                    .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                    .height(5.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x22FFFFFF))
             ) {
-                val graphColor = CpuColor
-                Canvas(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-                    val w = size.width
-                    val h = size.height
-
-                    // Draw grid lines at 25%, 50%, 75%
-                    val gridColor = Color.White.copy(alpha = 0.06f)
-                    listOf(0.25f, 0.50f, 0.75f).forEach { frac ->
-                        val y = h * (1f - frac)
-                        drawLine(gridColor, Offset(0f, y), Offset(w, y), strokeWidth = 1f)
-                    }
-
-                    if (history.size >= 2) {
-                        val step = w / (history.size - 1).toFloat()
-
-                        // Filled area under the curve
-                        val fillPath = Path().apply {
-                            moveTo(0f, h)
-                            history.forEachIndexed { i, v ->
-                                val x = i * step
-                                val y = h * (1f - (v / 100f).coerceIn(0f, 1f))
-                                if (i == 0) lineTo(x, y) else lineTo(x, y)
-                            }
-                            lineTo((history.size - 1) * step, h)
-                            close()
-                        }
-                        drawPath(
-                            fillPath,
-                            brush = Brush.verticalGradient(
-                                colors = listOf(graphColor.copy(alpha = 0.35f), Color.Transparent)
-                            )
-                        )
-
-                        // Stroke line
-                        val linePath = Path().apply {
-                            history.forEachIndexed { i, v ->
-                                val x = i * step
-                                val y = h * (1f - (v / 100f).coerceIn(0f, 1f))
-                                if (i == 0) moveTo(x, y) else lineTo(x, y)
-                            }
-                        }
-                        drawPath(linePath, color = graphColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
-                    }
-                }
-
-                // Corner labels
-                Box(modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
-                    Text("100%", color = TextMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.TopStart))
-                    Text("0%",   color = TextMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.BottomStart))
-                    Text("60s",  color = TextMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.BottomEnd))
-                }
-            }
-
-            // Per-core grid — like Task Manager's "All cores" view
-            if (info.cpuCoresUsage.isNotEmpty()) {
-                Text(
-                    "CORES",
-                    color = TextMuted,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(progressColor)
                 )
-                CpuCoreGrid(cores = info.cpuCoresUsage)
             }
         }
     }
 }
 
 @Composable
-private fun CpuCoreGrid(cores: List<Float>) {
-    // 4 columns of mini core bars
-    val columns = 4
-    val rows = (cores.size + columns - 1) / columns
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (row in 0 until rows) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                for (col in 0 until columns) {
-                    val idx = row * columns + col
-                    if (idx < cores.size) {
-                        val usage = cores[idx]
-                        val color = when {
-                            usage > 80f -> DangerRed
-                            usage > 50f -> WarningAmber
-                            else        -> CpuColor
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            // Mini bar graph
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(36.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF050D1A))
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .fillMaxHeight((usage / 100f).coerceIn(0f, 1f))
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(
-                                            Brush.verticalGradient(
-                                                listOf(color, color.copy(alpha = 0.5f))
-                                            )
-                                        )
-                                        .align(Alignment.BottomCenter)
-                                )
-                            }
-                            Text(
-                                "${usage.toInt()}%",
-                                color = color,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "C${idx}",
-                                color = TextMuted,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 8.sp
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AnimatedConnectedDot() {
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
+private fun DashboardBottomNavBar(
+    activeTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .background(SuccessGreen.copy(alpha = alpha))
-    )
-}
-
-@Composable
-private fun BentoAction(
-    icon: ImageVector, label: String, color: Color,
-    modifier: Modifier, onClick: () -> Unit,
-) {
-    GlassCard(
-        modifier = modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onClick),
-        innerPadding = 0.dp,
-        cornerRadius = 24.dp
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier.size(46.dp).clip(CircleShape).background(color.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, label, tint = color, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(label, color = TextPrimary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-private fun BentoGaugeCard(
-    label: String, progress: Float, valueText: String, 
-    color: Color, modifier: Modifier, subText: String? = null
-) {
-    GlassCard(modifier = modifier, innerPadding = 12.dp, cornerRadius = 24.dp) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(4.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.fillMaxSize(),
-                    color = GlassBorder.copy(alpha = 0.1f),
-                    strokeWidth = 6.dp,
-                    strokeCap = StrokeCap.Round
-                )
-                CircularProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxSize(),
-                    color = color,
-                    strokeWidth = 6.dp,
-                    strokeCap = StrokeCap.Round
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(valueText, style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
-                    if (subText != null) {
-                        Text(subText, style = MaterialTheme.typography.labelSmall, color = TextSecondary, fontSize = 9.sp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(label, color = TextMuted, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        }
-    }
-}
-
-@Composable
-private fun PowerButton(icon: ImageVector, label: String, modifier: Modifier, tint: Color = TextSecondary, onClick: () -> Unit) {
-    GlassCard(
-        modifier = modifier.clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick), 
-        innerPadding = 16.dp, 
-        cornerRadius = 20.dp
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, label, tint = tint, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(label, color = tint, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-private fun PowerOption(icon: ImageVector, label: String, tint: Color, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(tint.copy(alpha = 0.1f))
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .background(Color(0xF0081224))
+            .border(width = 0.5.dp, color = Color(0x331E385B), shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Icon(icon, label, tint = tint, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(0.9f),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NavTabItem(
+                icon = Icons.Filled.Home,
+                label = "Home",
+                isSelected = activeTab == "Home",
+                onClick = { onTabSelected("Home") }
+            )
+            NavTabItem(
+                icon = Icons.Outlined.Folder,
+                label = "Files",
+                isSelected = activeTab == "Files",
+                onClick = { onTabSelected("Files") }
+            )
+            NavTabItem(
+                icon = Icons.Outlined.Monitor,
+                label = "Mirror",
+                isSelected = activeTab == "Mirror",
+                onClick = { onTabSelected("Mirror") }
+            )
+            NavTabItem(
+                icon = Icons.Outlined.Settings,
+                label = "System",
+                isSelected = activeTab == "System",
+                onClick = { onTabSelected("System") }
+            )
+        }
+    }
+}
+
+@Composable
+private fun NavTabItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(CircleShape)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B),
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B)
+        )
     }
 }
