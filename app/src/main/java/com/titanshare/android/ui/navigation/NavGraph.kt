@@ -17,15 +17,22 @@ import com.titanshare.android.viewmodel.AppViewModel
 
 @Composable
 fun TitanNavGraph(navController: NavHostController, vm: AppViewModel) {
-    NavHost(navController = navController, startDestination = Screen.Welcome.route) {
+    val startDestination = if (vm.isWelcomeCompleted) Screen.Discovery.route else Screen.Welcome.route
+    NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Screen.Welcome.route) {
             WelcomeScreen(
                 onGetStarted = {
-                    navController.navigate(Screen.Discovery.route)
+                    vm.completeWelcome()
+                    navController.navigate(Screen.Discovery.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
                 },
                 onSkip = {
-                    navController.navigate(Screen.Discovery.route)
+                    vm.completeWelcome()
+                    navController.navigate(Screen.Discovery.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
                 }
             )
         }
