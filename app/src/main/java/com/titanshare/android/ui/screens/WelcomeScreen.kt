@@ -294,7 +294,7 @@ private fun FeatureItemCard(
 }
 
 @Composable
-private fun TitanLogo(modifier: Modifier = Modifier) {
+fun TitanLogo(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
