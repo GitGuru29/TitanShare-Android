@@ -12,11 +12,23 @@ import com.titanshare.android.ui.screens.LinuxFilesScreen
 import com.titanshare.android.ui.screens.MirrorScreen
 import com.titanshare.android.ui.screens.PairingScreen
 import com.titanshare.android.ui.screens.TrackpadScreen
+import com.titanshare.android.ui.screens.WelcomeScreen
 import com.titanshare.android.viewmodel.AppViewModel
 
 @Composable
 fun TitanNavGraph(navController: NavHostController, vm: AppViewModel) {
-    NavHost(navController = navController, startDestination = Screen.Discovery.route) {
+    NavHost(navController = navController, startDestination = Screen.Welcome.route) {
+
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onGetStarted = {
+                    navController.navigate(Screen.Discovery.route)
+                },
+                onSkip = {
+                    navController.navigate(Screen.Discovery.route)
+                }
+            )
+        }
 
         composable(Screen.Discovery.route) {
             DiscoveryScreen(vm = vm, onDeviceSelected = {
