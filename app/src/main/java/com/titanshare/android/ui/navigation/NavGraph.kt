@@ -11,6 +11,7 @@ import com.titanshare.android.ui.screens.KeyboardScreen
 import com.titanshare.android.ui.screens.LinuxFilesScreen
 import com.titanshare.android.ui.screens.MirrorScreen
 import com.titanshare.android.ui.screens.PairingScreen
+import com.titanshare.android.ui.screens.SystemDetailsScreen
 import com.titanshare.android.ui.screens.TrackpadScreen
 import com.titanshare.android.ui.screens.WelcomeScreen
 import com.titanshare.android.viewmodel.AppViewModel
@@ -64,6 +65,14 @@ fun TitanNavGraph(navController: NavHostController, vm: AppViewModel) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.SystemDetails.route) {
+            SystemDetailsScreen(
+                vm = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onBack = { navController.popBackStack() }
             )
         }
 

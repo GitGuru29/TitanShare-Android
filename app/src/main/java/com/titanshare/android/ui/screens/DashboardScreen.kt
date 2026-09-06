@@ -105,7 +105,7 @@ fun DashboardScreen(
                     ipAddress = device?.host ?: "10.72.76.6",
                     model = sysInfo?.let { "${it.brand} ${it.model}".trim() }?.takeIf { it.isNotBlank() } ?: "LENOVO 82KB",
                     kernel = sysInfo?.osVersion?.takeIf { it.isNotBlank() } ?: "Linux 6.18.47-1-lts",
-                    onCardClick = { showDisconnectDialog = true }
+                    onCardClick = { onNavigate(Screen.SystemDetails.route) }
                 )
 
                 // 2. Bento Quick Action Grid (4 Buttons)
@@ -154,7 +154,11 @@ fun DashboardScreen(
 
                 // 4. System Overview Header
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onNavigate(Screen.SystemDetails.route) }
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -186,7 +190,7 @@ fun DashboardScreen(
                 when (tab) {
                     "Files"  -> onNavigate(Screen.LinuxFiles.route)
                     "Mirror" -> onNavigate(Screen.Mirror.route)
-                    "System" -> { showDisconnectDialog = true }
+                    "System" -> onNavigate(Screen.SystemDetails.route)
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter)
