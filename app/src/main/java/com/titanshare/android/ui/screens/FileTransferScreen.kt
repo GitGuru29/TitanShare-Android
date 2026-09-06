@@ -28,9 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -61,7 +64,8 @@ data class TransferHistoryItem(
     val timestamp: String,
     val isSuccess: Boolean = true,
     val fileType: TransferFileType = TransferFileType.OTHER,
-    val isIncoming: Boolean = false
+    val isIncoming: Boolean = false,
+    val isSampleAvatar: Boolean = false
 )
 
 @Composable
@@ -96,7 +100,8 @@ fun FileTransferScreen(
                     sizeFormatted = "2.4 MB",
                     status = "Completed",
                     timestamp = "12:05",
-                    fileType = TransferFileType.IMAGE
+                    fileType = TransferFileType.IMAGE,
+                    isSampleAvatar = true
                 ),
                 TransferHistoryItem(
                     name = "ArchTitan-ISO.iso",
@@ -162,7 +167,8 @@ fun FileTransferScreen(
                 timestamp = time,
                 isSuccess = true,
                 fileType = getFileType(selectedName),
-                isIncoming = false
+                isIncoming = false,
+                isSampleAvatar = false
             )
             recentTransfers = listOf(newItem) + recentTransfers
         }
@@ -210,32 +216,35 @@ fun FileTransferScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
         ) {
             // ── Top Header Bar ─────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp)
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "File Transfer",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 4.dp)
+                    color = Color.White
                 )
             }
 
-            // ── Main Content Area ──────────────────────────────────────
+            // ── Main Scrollable/Padded Content Area ────────────────────
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -247,7 +256,7 @@ fun FileTransferScreen(
                     ipAddress = device?.host ?: "10.72.76.6"
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // 2. Custom Tabs: "Send to PC", "Receive from PC", "History"
                 TransferTabBar(
@@ -256,7 +265,7 @@ fun FileTransferScreen(
                     onTabSelected = { selectedTab = it }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // 3. Tab Contents
                 when (selectedTab) {
@@ -314,7 +323,7 @@ fun FileTransferScreen(
                 }
             }
 
-            // ── Bottom Navigation Bar ──────────────────────────────────
+            // ── Bottom Navigation Bar with Home Bar Indicator ──────────
             FileTransferBottomNavBar(
                 activeTab = "Files",
                 onTabSelected = { tab ->
@@ -354,7 +363,7 @@ private fun ConnectedDeviceTopCard(
             .clip(RoundedCornerShape(18.dp))
             .background(Color(0xFF0A1224))
             .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -362,39 +371,39 @@ private fun ConnectedDeviceTopCard(
             // Laptop Icon Graphic Container
             Box(
                 modifier = Modifier
-                    .size(width = 56.dp, height = 44.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0x221E385B)),
+                    .size(width = 64.dp, height = 48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0x1F1E385B)),
                 contentAlignment = Alignment.Center
             ) {
                 MiniLaptopGraphic()
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = deviceName,
-                    fontSize = 16.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(7.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF00E676))
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Connected - $ipAddress",
-                        fontSize = 12.sp,
+                        fontSize = 12.5.sp,
                         color = Color(0xFF94A3B8)
                     )
                 }
@@ -406,39 +415,61 @@ private fun ConnectedDeviceTopCard(
 @Composable
 private fun MiniLaptopGraphic() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Screen Lid
         Box(
             modifier = Modifier
-                .width(42.dp)
-                .height(26.dp)
+                .width(46.dp)
+                .height(29.dp)
                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 1.dp, bottomEnd = 1.dp))
-                .background(Color(0xFF0B1424))
+                .background(Color(0xFF0B1322))
                 .border(0.8.dp, Color(0xFF1E385B), RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 1.dp, bottomEnd = 1.dp))
-                .padding(1.5.dp),
+                .padding(1.8.dp),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF020712),
-                                Color(0xFF0052FF),
-                                Color(0xFF00D4FF)
-                            ),
-                            start = Offset(0f, 0f),
-                            end = Offset(50f, 40f)
-                        )
+            // Wallpaper display with glowing beam
+            Canvas(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(2.dp))) {
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF020713),
+                            Color(0xFF041944),
+                            Color(0xFF0052FF)
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, size.height)
                     )
-            )
+                )
+                // Glowing curved arc wave
+                val wavePath = Path().apply {
+                    moveTo(0f, size.height * 0.9f)
+                    cubicTo(
+                        size.width * 0.4f, size.height * 0.8f,
+                        size.width * 0.6f, size.height * 0.2f,
+                        size.width, size.height * 0.1f
+                    )
+                    lineTo(size.width, size.height)
+                    lineTo(0f, size.height)
+                    close()
+                }
+                drawPath(
+                    path = wavePath,
+                    brush = Brush.linearGradient(
+                        listOf(Color(0x3300D4FF), Color(0x990088FF), Color(0xFF00D4FF))
+                    )
+                )
+            }
         }
+        // Base / Keyboard Deck
         Box(
             modifier = Modifier
-                .width(48.dp)
-                .height(3.dp)
+                .width(52.dp)
+                .height(3.5.dp)
                 .clip(RoundedCornerShape(bottomStart = 3.dp, bottomEnd = 3.dp))
-                .background(Color(0xFF1E385B))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF334A6E), Color(0xFF1E2E48))
+                    )
+                )
         )
     }
 }
@@ -462,7 +493,7 @@ private fun TransferTabBar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clickable { onTabSelected(index) }
-                    .padding(vertical = 6.dp)
+                    .padding(vertical = 4.dp)
             ) {
                 Text(
                     text = title,
@@ -476,7 +507,7 @@ private fun TransferTabBar(
                 if (isSelected) {
                     Box(
                         modifier = Modifier
-                            .width(64.dp)
+                            .width(60.dp)
                             .height(2.5.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF00A2FF))
@@ -507,24 +538,24 @@ private fun SendToPcContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         // ── Dashed Dropzone Card ───────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp)
+                .height(195.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .clickable { onPickFile() }
         ) {
             // Custom Dashed Outline
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val stroke = Stroke(
-                    width = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 16f), 0f)
+                    width = 1.6.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 14f), 0f)
                 )
                 drawRoundRect(
-                    color = Color(0x6600A2FF),
+                    color = Color(0x5500A2FF),
                     size = size,
                     cornerRadius = CornerRadius(20.dp.toPx(), 20.dp.toPx()),
                     style = stroke
@@ -535,8 +566,8 @@ private fun SendToPcContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0x150052FF))
-                    .padding(16.dp),
+                    .background(Color(0x0F0052FF))
+                    .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -547,36 +578,36 @@ private fun SendToPcContent(
                         imageVector = Icons.Outlined.Folder,
                         contentDescription = "Folder",
                         tint = Color.White,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(46.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = if (selectedUri != null) selectedName else "Select files to send",
-                        fontSize = 16.sp,
+                        fontSize = 16.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = if (selectedUri != null) "${fileSize / 1024} KB • Tap to change" else "Or tap to browse",
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         color = Color(0xFF94A3B8)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "You can also share files from other apps\nusing the share menu.",
                         fontSize = 11.5.sp,
                         color = Color(0xFF64748B),
                         textAlign = TextAlign.Center,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
             }
@@ -587,10 +618,10 @@ private fun SendToPcContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFF0A1224))
-                    .border(1.dp, Color(0x331E385B), RoundedCornerShape(16.dp))
-                    .padding(14.dp)
+                    .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
+                    .padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -599,7 +630,7 @@ private fun SendToPcContent(
                 ) {
                     Text(
                         text = status ?: if (progress > 0f) "Uploading..." else "Ready to Send",
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = when {
                             status?.startsWith("✅") == true -> Color(0xFF00E676)
@@ -609,7 +640,7 @@ private fun SendToPcContent(
                     )
                     Text(
                         text = "${(progress * 100).toInt()}%",
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -624,7 +655,7 @@ private fun SendToPcContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 LinearProgressIndicator(
                     progress = { progress },
@@ -636,7 +667,7 @@ private fun SendToPcContent(
                     trackColor = Color(0x33FFFFFF)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -700,7 +731,7 @@ private fun SendToPcContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (recentTransfers.isEmpty()) {
                 Box(
@@ -716,7 +747,7 @@ private fun SendToPcContent(
                     )
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     recentTransfers.forEach { item ->
                         TransferItemRow(item = item)
                     }
@@ -735,9 +766,13 @@ private fun TransferItemRow(item: TransferHistoryItem) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Thumbnail / File Icon
-        FileIconBadge(fileType = item.fileType, filename = item.name)
+        FileIconBadge(
+            fileType = item.fileType,
+            filename = item.name,
+            isSampleAvatar = item.isSampleAvatar
+        )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -749,7 +784,7 @@ private fun TransferItemRow(item: TransferHistoryItem) {
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
             Text(
                 text = "${item.sizeFormatted} • ${item.status}",
@@ -758,97 +793,108 @@ private fun TransferItemRow(item: TransferHistoryItem) {
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Completed",
                 tint = Color(0xFF00E676),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(17.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = item.timestamp,
                 fontSize = 12.sp,
-                color = Color(0xFF64748B)
+                color = Color(0xFF94A3B8)
             )
         }
     }
 }
 
 @Composable
-private fun FileIconBadge(fileType: TransferFileType, filename: String) {
-    when (fileType) {
-        TransferFileType.IMAGE -> {
+private fun FileIconBadge(
+    fileType: TransferFileType,
+    filename: String,
+    isSampleAvatar: Boolean = false
+) {
+    when {
+        isSampleAvatar || (fileType == TransferFileType.IMAGE && filename.contains("IMG_20260904")) -> {
+            // High fidelity illustrated portrait photo matching the mockup
+            PortraitAvatarBadge()
+        }
+        fileType == TransferFileType.IMAGE -> {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
                         Brush.linearGradient(
-                            listOf(Color(0xFF2E384D), Color(0xFF1E2838))
+                            listOf(Color(0xFF23354E), Color(0xFF152233))
                         )
                     )
-                    .border(0.8.dp, Color(0x33FFFFFF), RoundedCornerShape(10.dp)),
+                    .border(0.8.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Image,
                     contentDescription = "Image",
                     tint = Color(0xFF60A5FA),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
-        TransferFileType.DOCUMENT -> {
+        fileType == TransferFileType.DOCUMENT -> {
+            // Clean document sheet with folded corner icon
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF1E293B))
-                    .border(0.8.dp, Color(0x33FFFFFF), RoundedCornerShape(10.dp)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF162032))
+                    .border(0.8.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Description,
                     contentDescription = "Document",
-                    tint = Color.White,
+                    tint = Color(0xFFF1F5F9),
                     modifier = Modifier.size(22.dp)
                 )
             }
         }
-        TransferFileType.ARCHIVE -> {
+        fileType == TransferFileType.ARCHIVE -> {
+            // Amber/orange archive badge matching the mockup screenshot
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF1E293B))
-                    .border(0.8.dp, Color(0x33FFFFFF), RoundedCornerShape(10.dp)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF162032))
+                    .border(0.8.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(5.dp))
                         .background(Color(0xFFF59E0B)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.FolderZip,
-                        contentDescription = "Zip",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                    Text(
+                        text = "1",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
         }
-        TransferFileType.VIDEO -> {
+        fileType == TransferFileType.VIDEO -> {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF1E293B)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF162032))
+                    .border(0.8.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -859,12 +905,13 @@ private fun FileIconBadge(fileType: TransferFileType, filename: String) {
                 )
             }
         }
-        TransferFileType.AUDIO -> {
+        fileType == TransferFileType.AUDIO -> {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF1E293B)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF162032))
+                    .border(0.8.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -875,12 +922,13 @@ private fun FileIconBadge(fileType: TransferFileType, filename: String) {
                 )
             }
         }
-        TransferFileType.OTHER -> {
+        else -> {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF1E293B)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF162032))
+                    .border(0.8.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -890,6 +938,102 @@ private fun FileIconBadge(fileType: TransferFileType, filename: String) {
                     modifier = Modifier.size(22.dp)
                 )
             }
+        }
+    }
+}
+
+/**
+ * Realistic portrait avatar badge designed to match the mockup's person photo thumbnail.
+ */
+@Composable
+private fun PortraitAvatarBadge() {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF4A3E38), Color(0xFF1F2430))
+                )
+            )
+            .border(0.8.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            // Warm studio background glow
+            drawCircle(
+                color = Color(0x44D97706),
+                radius = w * 0.45f,
+                center = Offset(w * 0.5f, h * 0.45f)
+            )
+
+            // Shoulders / Dark Jacket
+            drawArc(
+                color = Color(0xFF1E293B),
+                startAngle = 0f,
+                sweepAngle = 180f,
+                useCenter = true,
+                topLeft = Offset(w * 0.1f, h * 0.55f),
+                size = Size(w * 0.8f, h * 0.8f)
+            )
+
+            // White shirt collar V
+            val collarPath = Path().apply {
+                moveTo(w * 0.42f, h * 0.62f)
+                lineTo(w * 0.5f, h * 0.76f)
+                lineTo(w * 0.58f, h * 0.62f)
+                close()
+            }
+            drawPath(collarPath, Color(0xFFE2E8F0))
+
+            // Neck
+            drawRect(
+                color = Color(0xFFD4A373),
+                topLeft = Offset(w * 0.42f, h * 0.52f),
+                size = Size(w * 0.16f, h * 0.14f)
+            )
+
+            // Face
+            drawCircle(
+                color = Color(0xFFE7C198),
+                radius = w * 0.22f,
+                center = Offset(w * 0.5f, h * 0.38f)
+            )
+
+            // Glasses rims
+            drawCircle(
+                color = Color(0xFF262626),
+                radius = w * 0.075f,
+                center = Offset(w * 0.41f, h * 0.36f),
+                style = Stroke(width = 1.2.dp.toPx())
+            )
+            drawCircle(
+                color = Color(0xFF262626),
+                radius = w * 0.075f,
+                center = Offset(w * 0.59f, h * 0.36f),
+                style = Stroke(width = 1.2.dp.toPx())
+            )
+            // Glasses bridge
+            drawLine(
+                color = Color(0xFF262626),
+                start = Offset(w * 0.485f, h * 0.36f),
+                end = Offset(w * 0.515f, h * 0.36f),
+                strokeWidth = 1.2.dp.toPx()
+            )
+
+            // Smile
+            drawArc(
+                color = Color(0xFF8B4513),
+                startAngle = 10f,
+                sweepAngle = 160f,
+                useCenter = false,
+                topLeft = Offset(w * 0.44f, h * 0.42f),
+                size = Size(w * 0.12f, h * 0.08f),
+                style = Stroke(width = 1.dp.toPx())
+            )
         }
     }
 }
@@ -907,29 +1051,30 @@ private fun ReceiveFromPcContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Status & Refresh card
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .background(Color(0xFF0A1224))
-                .border(1.dp, Color(0x331E385B), RoundedCornerShape(16.dp))
-                .padding(14.dp),
+                .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "PC Shared Directory",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "/var/lib/titanshare/send_to_android/",
-                    fontSize = 11.sp,
+                    fontSize = 11.5.sp,
                     color = Color(0xFF94A3B8)
                 )
             }
@@ -950,10 +1095,10 @@ private fun ReceiveFromPcContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFF0A1224))
-                    .border(1.dp, Color(0x331E385B), RoundedCornerShape(16.dp))
-                    .padding(14.dp)
+                    .border(1.dp, Color(0x331E385B), RoundedCornerShape(18.dp))
+                    .padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -962,13 +1107,13 @@ private fun ReceiveFromPcContent(
                 ) {
                     Text(
                         text = receiveStatus ?: "Receiving...",
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF00A2FF)
                     )
                     Text(
                         text = "${(receiveProgress * 100).toInt()}%",
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -983,7 +1128,7 @@ private fun ReceiveFromPcContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 LinearProgressIndicator(
                     progress = { receiveProgress },
@@ -1013,13 +1158,13 @@ private fun ReceiveFromPcContent(
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (linuxFiles.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 30.dp),
+                        .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1038,7 +1183,7 @@ private fun ReceiveFromPcContent(
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     linuxFiles.forEach { file ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1046,9 +1191,9 @@ private fun ReceiveFromPcContent(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF1E293B)),
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF162032)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -1114,7 +1259,7 @@ private fun HistoryContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column(
             modifier = Modifier
@@ -1149,7 +1294,7 @@ private fun HistoryContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (transfers.isEmpty()) {
                 Box(
@@ -1165,7 +1310,7 @@ private fun HistoryContent(
                     )
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     transfers.forEach { item ->
                         TransferItemRow(item = item)
                     }
@@ -1183,33 +1328,35 @@ private fun FileTransferBottomNavBar(
     onTabSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xF0081224))
+            .background(Color(0xFF081224))
             .border(width = 0.5.dp, color = Color(0x331E385B), shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(0.9f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavTabItem(
-                icon = Icons.Filled.Home,
+                icon = Icons.Outlined.Home,
                 label = "Home",
                 isSelected = activeTab == "Home",
                 onClick = { onTabSelected("Home") }
             )
             NavTabItem(
-                icon = Icons.Outlined.Folder,
+                icon = Icons.Filled.Folder,
                 label = "Files",
                 isSelected = activeTab == "Files",
                 onClick = { onTabSelected("Files") }
             )
             NavTabItem(
-                icon = Icons.Outlined.Monitor,
+                icon = Icons.Outlined.Tv,
                 label = "Mirror",
                 isSelected = activeTab == "Mirror",
                 onClick = { onTabSelected("Mirror") }
@@ -1221,6 +1368,16 @@ private fun FileTransferBottomNavBar(
                 onClick = { onTabSelected("System") }
             )
         }
+
+        // Bottom Home bar indicator
+        Box(
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .width(120.dp)
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(Color(0x99FFFFFF))
+        )
     }
 }
 
@@ -1236,19 +1393,19 @@ private fun NavTabItem(
         modifier = Modifier
             .clip(CircleShape)
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = 14.dp, vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B),
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(23.dp)
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
             fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B)
         )
     }
