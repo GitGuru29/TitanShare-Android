@@ -85,7 +85,11 @@ fun TitanNavGraph(navController: NavHostController, vm: AppViewModel) {
         }
 
         composable(Screen.FileTransfer.route) {
-            FileTransferScreen(vm = vm, onBack = { navController.popBackStack() })
+            FileTransferScreen(
+                vm = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(Screen.LinuxFiles.route) {

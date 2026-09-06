@@ -33,7 +33,11 @@ import com.titanshare.android.ui.theme.*
 import com.titanshare.android.viewmodel.AppViewModel
 
 @Composable
-fun MirrorScreen(vm: AppViewModel, onBack: () -> Unit) {
+fun MirrorScreen(
+    vm: AppViewModel,
+    onNavigate: (String) -> Unit = {},
+    onBack: () -> Unit
+) {
     val context = LocalContext.current
     val isActive by vm.mirrorActive.collectAsStateWithLifecycle()
     val error by vm.mirrorError.collectAsStateWithLifecycle()
@@ -112,6 +116,18 @@ fun MirrorScreen(vm: AppViewModel, onBack: () -> Unit) {
                         }
                     },
                     error = error,
+                )
+
+                MirrorBottomNavBar(
+                    activeTab = "Mirror",
+                    onTabSelected = { tab ->
+                        when (tab) {
+                            "Home" -> onNavigate(Screen.Dashboard.route)
+                            "Files" -> onNavigate(Screen.FileTransfer.route)
+                            "Mirror" -> { /* Already here */ }
+                            "System" -> onNavigate(Screen.SystemDetails.route)
+                        }
+                    }
                 )
             }
         }
@@ -414,5 +430,82 @@ private fun LiveBadge() {
         )
         Spacer(Modifier.width(6.dp))
         Text("LIVE", color = SuccessGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun MirrorBottomNavBar(
+    activeTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xF0081224))
+            .border(width = 0.5.dp, color = Color(0x331E385B), shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(0.9f),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NavTabItem(
+                icon = Icons.Default.Home,
+                label = "Home",
+                isSelected = activeTab == "Home",
+                onClick = { onTabSelected("Home") }
+            )
+            NavTabItem(
+                icon = Icons.Default.Folder,
+                label = "Files",
+                isSelected = activeTab == "Files",
+                onClick = { onTabSelected("Files") }
+            )
+            NavTabItem(
+                icon = Icons.Default.Tv,
+                label = "Mirror",
+                isSelected = activeTab == "Mirror",
+                onClick = { onTabSelected("Mirror") }
+            )
+            NavTabItem(
+                icon = Icons.Default.Settings,
+                label = "System",
+                isSelected = activeTab == "System",
+                onClick = { onTabSelected("System") }
+            )
+        }
+    }
+}
+
+@Composable
+private fun NavTabItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(CircleShape)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B),
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) Color(0xFF00A2FF) else Color(0xFF64748B)
+        )
     }
 }
