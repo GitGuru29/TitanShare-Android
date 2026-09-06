@@ -93,6 +93,10 @@ fun MirrorScreen(vm: AppViewModel, onBack: () -> Unit) {
                 )
                 if (isActive) {
                     LiveBadge()
+                } else {
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.Settings, "Settings", tint = TextSecondary)
+                    }
                 }
             }
 
@@ -119,66 +123,116 @@ private fun ColumnScope.IdleMirrorView(onStart: () -> Unit, error: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 24.dp)
             .weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 32.dp, cornerRadius = 32.dp) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
-                        .background(ElectricBlue.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.ScreenShare, null,
-                        tint = ElectricBlue, modifier = Modifier.size(48.dp)
-                    )
+        Spacer(Modifier.weight(1f))
+        
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = com.titanshare.android.R.drawable.img_mirror_illustration),
+            contentDescription = "Screen Mirror Illustration",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+        )
+        
+        Spacer(Modifier.height(32.dp))
+        
+        Text(
+            "Mirror your Android screen\nto the Linux PC",
+            color = TextPrimary,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        
+        Spacer(Modifier.height(32.dp))
+        
+        GlassCard(modifier = Modifier.fillMaxWidth(), innerPadding = 20.dp, cornerRadius = 24.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                // Feature 1
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(SuccessGreen.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Bolt, null, tint = SuccessGreen, modifier = Modifier.size(24.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("High Performance", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text("Low latency, smooth experience", color = TextSecondary, fontSize = 13.sp)
+                    }
                 }
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    "Mirror your screen to the Linux PC",
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Your phone screen will appear in a window on the paired PC.\n"
-                        + "Use it live — touch, scroll and type remotely.",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    lineHeight = 20.sp,
-                )
-                Spacer(Modifier.height(28.dp))
-
-                Button(
-                    onClick = onStart,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                ) {
-                    Icon(Icons.Default.Videocam, null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Start Mirroring", style = MaterialTheme.typography.labelLarge)
+                
+                // Feature 2
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(PurpleAccent.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.TouchApp, null, tint = PurpleAccent, modifier = Modifier.size(24.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Full Control", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text("Touch, scroll and type from your PC", color = TextSecondary, fontSize = 13.sp)
+                    }
                 }
-
-                if (error != null) {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        error,
-                        color = DangerRed,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    )
+                
+                // Feature 3
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(ElectricBlue.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.DesktopMac, null, tint = ElectricBlue, modifier = Modifier.size(24.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Real-time Streaming", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text("Up to 1080p • 60 FPS", color = TextSecondary, fontSize = 13.sp)
+                    }
                 }
             }
+        }
+        
+        Spacer(Modifier.weight(1.5f))
+
+        if (error != null) {
+            Text(
+                error,
+                color = DangerRed,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Button(
+            onClick = onStart,
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+                .height(56.dp),
+        ) {
+            Icon(Icons.Default.Videocam, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Text("Start Mirroring", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }
