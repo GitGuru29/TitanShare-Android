@@ -176,6 +176,8 @@ class DaemonClient {
                     cpuCoresUsage = coresUsage,
                     cpuFreqGhz   = data.getString("cpu_freq_ghz"),
                     cpuCoreCount = try { data.get("cpu_core_count")?.asInt ?: 0 } catch (_: Exception) { 0 },
+                    cpuModel     = data.getString("cpu_model").ifEmpty { "Intel Core Processor" },
+                    gpuModel     = data.getString("gpu_model").ifEmpty { "Integrated Graphics" },
                     ramUsage     = data.getString("ramUsage"),
                     ramUsed      = data.getString("ramUsed"),
                     ramTotal     = data.getString("ramTotal"),
