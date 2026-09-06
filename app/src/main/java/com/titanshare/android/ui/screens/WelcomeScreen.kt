@@ -418,7 +418,7 @@ private fun WelcomeBackground(modifier: Modifier = Modifier) {
             ),
             radius = planetRadius,
             center = Offset(planetCenterX, planetCenterY),
-            style = Stroke(width = 2.5dp.toPx())
+            style = Stroke(width = 2.5.dp.toPx())
         )
 
         // 4. Mountain Silhouettes at bottom
