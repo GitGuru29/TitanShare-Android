@@ -72,8 +72,14 @@ class TcpMirrorStreamer(
 
         Thread({
             try {
-                val s = Socket()
-                s.connect(InetSocketAddress(host, port), 8000)
+                val s = try {
+                    com.titanshare.android.data.network.SslHelper.createSslSocket(host, port, 8000)
+                } catch (e: Exception) {
+                    Log.w(tag, "TLS mirror stream fallback to standard socket: ${e.message}")
+                    val raw = Socket()
+                    raw.connect(InetSocketAddress(host, port), 8000)
+                    raw
+                }
                 s.tcpNoDelay = true
                 socket = s
                 out = BufferedOutputStream(s.getOutputStream(), 262144)
