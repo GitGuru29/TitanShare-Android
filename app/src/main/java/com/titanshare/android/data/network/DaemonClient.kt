@@ -92,7 +92,13 @@ class DaemonClient {
             } else {
                 Log.w(TAG, "❌ Auth failed (got: $response)")
                 disconnect()
-                _state.value = State.Error("Wrong PIN — try again")
+                _state.value = State.Error(
+                    when (response) {
+                        "AUTH_BLOCKED" -> "Too many attempts — IP temporarily blocked. Wait, then retry."
+                        null -> "No response from daemon (timeout). Check it is running."
+                        else -> "Wrong PIN — try again"
+                    }
+                )
                 false
             }
         } catch (e: Exception) {
