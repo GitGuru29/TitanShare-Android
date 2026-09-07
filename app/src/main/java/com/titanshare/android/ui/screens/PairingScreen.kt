@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Link
@@ -29,7 +31,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,9 +61,18 @@ fun PairingScreen(
     }
 
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    LaunchedEffect(error) {
+        if (error != null) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 
     Box(
@@ -186,15 +199,29 @@ fun PairingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { focusRequester.requestFocus() }
+                            .clickable {
+                                focusRequester.requestFocus()
+                                keyboardController?.show()
+                            }
                     ) {
                         BasicTextField(
                             value = pin,
                             onValueChange = { vm.updatePin(it) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.NumberPassword,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (pin.length == 6 && !isConnecting) {
+                                        vm.pair(onConnected)
+                                    }
+                                }
+                            ),
                             modifier = Modifier
-                                .size(1.dp)
-                                .alpha(0f)
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .alpha(0.01f)
                                 .focusRequester(focusRequester),
                             singleLine = true
                         )
@@ -215,7 +242,7 @@ fun PairingScreen(
                                         .background(Color(0x220E2244))
                                         .border(
                                             width = if (isFocusedBox) 1.5.dp else 1.dp,
-                                            color = if (isFocusedBox) Color(0xFF00A2FF) else Color(0x331E385B),
+                                            color = if (error != null) Color(0xFFFF4D4D) else if (isFocusedBox) Color(0xFF00A2FF) else Color(0x331E385B),
                                             shape = RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -225,7 +252,7 @@ fun PairingScreen(
                                             text = char,
                                             fontSize = 22.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = if (error != null) Color(0xFFFF6B6B) else Color.White
                                         )
                                     } else if (isFocusedBox && pin.length < 6) {
                                         Box(
@@ -237,6 +264,37 @@ fun PairingScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if (pin.isNotEmpty() || error != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0x1500A2FF))
+                                .border(1.dp, Color(0x3300A2FF), RoundedCornerShape(10.dp))
+                                .clickable {
+                                    vm.clearPin()
+                                    focusRequester.requestFocus()
+                                    keyboardController?.show()
+                                }
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Backspace,
+                                contentDescription = "Clear PIN",
+                                tint = Color(0xFF00A2FF),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Clear PIN",
+                                color = Color(0xFF00A2FF),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
 
@@ -272,12 +330,16 @@ fun PairingScreen(
 
                     // Error text if pairing fails
                     AnimatedVisibility(visible = error != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = error ?: "",
-                            color = Color(0xFFFF4D4D),
-                            fontSize = 13.sp
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = error ?: "",
+                                color = Color(0xFFFF4D4D),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

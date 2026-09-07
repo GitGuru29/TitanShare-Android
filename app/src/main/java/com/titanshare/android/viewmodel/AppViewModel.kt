@@ -134,8 +134,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updatePin(pin: String) {
-        if (pin.length <= 6 && pin.all { it.isDigit() })
+        if (pin.length <= 6 && pin.all { it.isDigit() }) {
             _pinInput.value = pin
+            if (_pairingError.value != null) {
+                _pairingError.value = null
+            }
+        }
+    }
+
+    fun clearPin() {
+        _pinInput.value = ""
+        _pairingError.value = null
     }
 
     fun clearPairingError() { _pairingError.value = null }
