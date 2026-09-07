@@ -67,7 +67,12 @@ class DaemonClient {
     suspend fun connect(ip: String, port: Int, pin: String): Boolean = withContext(Dispatchers.IO) {
         _state.value = State.Connecting
         try {
-            val s = Socket(ip, port).apply { soTimeout = TIMEOUT_MS }
+            val s = try {
+                SslHelper.createSslSocket(ip, port, TIMEOUT_MS)
+            } catch (e: Exception) {
+                Log.w(TAG, "TLS connect fallback to standard socket: ${e.message}")
+                Socket(ip, port).apply { soTimeout = TIMEOUT_MS }
+            }
             socket = s
             outputStream = s.outputStream
             writer = PrintWriter(s.outputStream.writer(), true)
