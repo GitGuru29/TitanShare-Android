@@ -13,7 +13,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import com.titanshare.android.data.mirror.ScreenMirrorCapture
 import com.titanshare.android.data.mirror.TcpMirrorStreamer
@@ -151,11 +153,18 @@ class MirrorService : Service() {
         // stops the projection session.
         registerProjectionCallback(proj)
 
-        // Read the source display size + density synchronously.
-        val metrics = resources.displayMetrics
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
-        val density = metrics.densityDpi
+        // Read true physical display size + density synchronously (0 bezels).
+        val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val (width, height, density) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = wm.maximumWindowMetrics.bounds
+            val d = resources.configuration.densityDpi
+            Triple(bounds.width(), bounds.height(), d)
+        } else {
+            val displayMetrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            wm.defaultDisplay.getRealMetrics(displayMetrics)
+            Triple(displayMetrics.widthPixels, displayMetrics.heightPixels, displayMetrics.densityDpi)
+        }
 
         val streamer = TcpMirrorStreamer(host, port)
         if (!streamer.connect()) {
