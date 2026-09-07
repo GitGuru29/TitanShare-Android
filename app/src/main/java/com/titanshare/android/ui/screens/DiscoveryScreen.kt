@@ -325,7 +325,7 @@ private fun PremiumDeviceCard(device: Device, onClick: () -> Unit) {
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = device.host,
+                        text = "Ready to connect",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                         fontWeight = FontWeight.Medium
