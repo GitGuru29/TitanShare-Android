@@ -45,6 +45,43 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val client = DaemonClient()
     val connectionState = client.state
 
+    // Persisted last-good session — lets us transparently reconnect after the
+    // app is backgrounded/killed, instead of silently dropping and forcing a
+    // full re-pair every time.
+    private var savedHost: String? = null
+    private var savedPort: Int = 0
+    private var savedPin: String = ""
+
+    init { restoreSession() }
+
+    private fun restoreSession() {
+        savedHost = prefs.getString("saved_host", null)
+        savedPort = prefs.getInt("saved_port", 0)
+        savedPin  = prefs.getString("saved_pin", "") ?: ""
+    }
+
+    private fun persistSession(host: String, port: Int, pin: String) {
+        savedHost = host
+        savedPort = port
+        savedPin  = pin
+        prefs.edit()
+            .putString("saved_host", host)
+            .putInt("saved_port", port)
+            .putString("saved_pin", pin)
+            .apply()
+    }
+
+    private fun clearSavedSession() {
+        savedHost = null
+        savedPort = 0
+        savedPin  = ""
+        prefs.edit()
+            .remove("saved_host")
+            .remove("saved_port")
+            .remove("saved_pin")
+            .apply()
+    }
+
     private val _pairingError = MutableStateFlow<String?>(null)
     val pairingError: StateFlow<String?> = _pairingError.asStateFlow()
 
@@ -166,15 +203,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
                 stopDiscovery()
                 startStatsPolling()
+                persistSession(device.host, device.port, pin)
                 onSuccess()
             } else {
-                _pairingError.value = "Wrong PIN or connection refused"
+                // Surface the real cause — DaemonClient distinguishes bans,
+                // timeouts, and genuine AUTH_FAIL. Never collapse to a blanket
+                // "wrong pin" message that hides connection-level failures.
+                val current = client.state.value
+                _pairingError.value = (current as? DaemonClient.State.Error)?.message
+                    ?: "Wrong PIN or connection refused"
             }
         }
     }
 
     fun disconnect() {
         stopStatsPolling()
+        clearSavedSession()
         if (_mirrorActive.value) {
             MirrorService.stop(getApplication())
         }
@@ -221,12 +265,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun onAppResume() {
         val currentState = client.state.value
-        val host = client.lastHost
-        val port = client.lastPort
-        val pin  = _pinInput.value
 
-        // Only attempt reconnect if we were previously connected and lost it
-        if (host != null && port > 0 &&
+        // Use the persisted session (host/port/pin), which survives process
+        // death and app relaunch — not just the in-memory socket state.
+        val host = savedHost
+        val port = savedPort
+        val pin  = savedPin
+
+        if (host != null && port > 0 && pin.length == 6 &&
             (currentState is DaemonClient.State.Disconnected ||
              currentState is DaemonClient.State.Error)) {
 
@@ -235,7 +281,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 if (ok) {
                     startStatsPolling()
                 } else {
-                    // Let the UI handle the error state shown by DaemonClient
+                    // Reconnect failed (e.g. daemon restarted / PIN rotated).
+                    // Let the UI handle the error state shown by DaemonClient.
                 }
             }
         } else if (currentState is DaemonClient.State.Connected && statsJob?.isActive != true) {
