@@ -86,7 +86,7 @@ TitanShare Android follows modern Android architecture best practices with Clean
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 ### 1. Welcome & Onboarding
 - **First-Run Splash**: Onboarding walkthrough highlighting ecosystem capabilities.
@@ -391,4 +391,4 @@ adb shell am start -n com.titanshare.android/.MainActivity
 
 Distributed under the **GPLv3 / Proprietary License**. See `LICENSE` for details.
 
-Developed with ❤️ for the **TitanShare Linux Ecosystem**.
+Developed with for the **TitanShare Linux Ecosystem**.
